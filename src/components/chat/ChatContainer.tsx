@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { Dumbbell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
@@ -81,9 +80,13 @@ export function ChatContainer() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1" ref={scrollRef}>
-        <div className="px-4 py-6 max-w-3xl mx-auto">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Scrollable messages area */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto scroll-smooth"
+      >
+        <div className="px-4 py-6 max-w-3xl mx-auto min-h-full">
           {isEmpty ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
               <div className="w-16 h-16 mb-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
@@ -110,12 +113,12 @@ export function ChatContainer() {
               </div>
             </div>
           ) : (
-            <>
+            <div className="space-y-2 pb-4">
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
               {isLoading && <TypingIndicator />}
-            </>
+            </div>
           )}
 
           {error && (
@@ -131,9 +134,12 @@ export function ChatContainer() {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
-      <ChatInput onSend={handleSend} disabled={isLoading} />
+      {/* Fixed input area at bottom */}
+      <div className="shrink-0 border-t bg-background">
+        <ChatInput onSend={handleSend} disabled={isLoading} />
+      </div>
     </div>
   );
 }

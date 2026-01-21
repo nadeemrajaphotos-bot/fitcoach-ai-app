@@ -36,7 +36,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   return (
-    <div className="flex items-end gap-2 p-4 border-t bg-background">
+    <div className="flex items-end gap-3 p-4 max-w-3xl mx-auto w-full">
       <textarea
         ref={textareaRef}
         value={input}
@@ -45,13 +45,13 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         placeholder="Ask about workouts, nutrition, or fitness..."
         disabled={disabled}
         rows={1}
-        className="flex-1 resize-none rounded-xl border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex-1 resize-none rounded-xl border border-input bg-muted/50 px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
       />
       <Button
         onClick={handleSubmit}
         disabled={disabled || !input.trim()}
         size="icon"
-        className="h-11 w-11 rounded-xl shrink-0"
+        className="h-11 w-11 rounded-xl shrink-0 bg-emerald-600 hover:bg-emerald-700"
       >
         <Send className="h-4 w-4" />
       </Button>
