@@ -1,36 +1,146 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Fitness Coach
+
+A personalized AI fitness coaching web application powered by n8n workflows and LangChain.
+
+## Features
+
+- **AI-Powered Coaching**: Get personalized fitness advice, workout plans, and nutrition guidance
+- **Conversation Memory**: The AI remembers your conversation context for better recommendations
+- **Gamification System**: Track your progress with streaks, XP levels, badges, and weekly goals
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Modern UI**: Clean, minimalistic interface inspired by Linear/Notion
+
+## Tech Stack
+
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS v4, shadcn/ui components
+- **State Management**: Zustand with localStorage persistence
+- **Backend**: n8n workflow with LangChain Agent + Groq LLM
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+
+- n8n instance with the AI Fitness Coach workflow configured
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/YOUR_USERNAME/ai-fitness-coach.git
+cd ai-fitness-coach
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Create environment file:
+```bash
+cp .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Configure your `.env` file with your n8n webhook URL:
+```env
+NEXT_PUBLIC_N8N_WEBHOOK_URL=https://your-n8n-instance.app.n8n.cloud/webhook/fitness-coach
+```
 
-## Learn More
+5. Start the development server:
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── page.tsx           # Main application page
+│   ├── layout.tsx         # Root layout
+│   └── globals.css        # Global styles
+├── components/
+│   ├── chat/              # Chat interface components
+│   │   ├── ChatContainer.tsx
+│   │   ├── ChatInput.tsx
+│   │   └── ChatMessage.tsx
+│   ├── gamification/      # Progress tracking components
+│   │   ├── GamificationPanel.tsx
+│   │   ├── StreakCounter.tsx
+│   │   ├── LevelProgress.tsx
+│   │   ├── WeeklyGoals.tsx
+│   │   └── BadgeGrid.tsx
+│   └── ui/                # shadcn/ui components
+├── lib/
+│   └── n8n-client.ts      # n8n API client
+├── stores/
+│   ├── chatStore.ts       # Chat state management
+│   └── gamificationStore.ts # Gamification state
+└── types/
+    ├── chat.ts            # Chat type definitions
+    └── gamification.ts    # Gamification types
+```
 
-## Deploy on Vercel
+## n8n Workflow Setup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The AI Fitness Coach requires an n8n workflow with:
+- **Webhook Trigger**: POST endpoint for receiving messages
+- **LangChain Agent**: AI processing with fitness coaching system prompt
+- **Groq LLM**: llama-3.3-70b-versatile model
+- **Window Buffer Memory**: Conversation context (10 messages)
+- **Respond to Webhook**: JSON response with CORS headers
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Expected Request Format
+```json
+{
+  "chatInput": "Your message here",
+  "sessionId": "unique-session-id"
+}
+```
+
+### Expected Response Format
+```json
+{
+  "output": "AI response here",
+  "sessionId": "unique-session-id"
+}
+```
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Import the repository in Vercel
+3. Add environment variable `NEXT_PUBLIC_N8N_WEBHOOK_URL` in Vercel settings
+4. Deploy
+
+### Manual Build
+
+```bash
+npm run build
+npm start
+```
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_N8N_WEBHOOK_URL` | n8n webhook endpoint URL | Yes |
+
+## Important Notes
+
+### n8n Execution Limits
+This project is designed to minimize n8n workflow executions. Each user message triggers one workflow execution. Monitor your n8n execution credits and consider implementing rate limiting for production use.
+
+### Security
+- Never commit `.env` files
+- All API keys are stored in environment variables
+- The webhook URL is public-facing (no authentication required by default)
+
+## License
+
+MIT
