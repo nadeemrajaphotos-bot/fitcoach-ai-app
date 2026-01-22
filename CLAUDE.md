@@ -381,3 +381,158 @@ After any testing session, document:
 ### Core Philosophy
 
 > The purpose of automation is to **optimize processes and conserve resources**, not to consume them excessively. Every action must align with efficiency, stability, and sustainability.
+
+---
+
+## OWASP LLM Top 10 Security Compliance
+
+This project implements security controls against the OWASP Top 10 for LLM Applications.
+
+### LLM01: Prompt Injection - MITIGATED
+
+**Risk**: Malicious inputs manipulating LLM behavior to bypass guidelines or execute unintended actions.
+
+**Controls Implemented**:
+| Control | Location | Description |
+|---------|----------|-------------|
+| Input Pattern Blocking | `src/lib/n8n-client.ts` | Regex patterns block common injection phrases |
+| System Prompt Hardening | n8n Workflow (Fitness Coach node) | Immutable security directive with deflection responses |
+| Topic Boundaries | n8n Workflow | LLM restricted to fitness/nutrition topics only |
+| Character Sanitization | `src/lib/n8n-client.ts` | Removes null bytes, control characters |
+
+**Blocked Patterns**:
+- "ignore/disregard/forget previous instructions"
+- "new instructions:"
+- "system prompt" references
+- LLM format markers (`[INST]`, `<|im_start|>`)
+- Roleplay/persona switching attempts
+
+### LLM02: Insecure Output Handling - MITIGATED
+
+**Risk**: LLM output containing executable code, scripts, or malicious content displayed to users.
+
+**Controls Implemented**:
+| Control | Location | Description |
+|---------|----------|-------------|
+| Output Sanitization | `src/components/chat/ChatMessage.tsx` | Removes HTML tags, script elements, event handlers |
+| ReactMarkdown Filtering | `src/components/chat/ChatMessage.tsx` | Blocks script/iframe/object/embed elements |
+| Link Sanitization | `src/components/chat/ChatMessage.tsx` | Only allows http/https protocols |
+| Instruction Leakage Removal | `src/components/chat/ChatMessage.tsx` | Strips system prompt patterns from output |
+
+### LLM03: Training Data Poisoning - NOT APPLICABLE
+
+This application uses Groq's hosted llama-3.3-70b-versatile model. Training data is managed by Meta/Groq. No custom training or fine-tuning is performed.
+
+### LLM04: Model Denial of Service - MITIGATED
+
+**Risk**: Excessive requests exhausting LLM resources or causing service degradation.
+
+**Controls Implemented**:
+| Control | Location | Description |
+|---------|----------|-------------|
+| Client Rate Limiting | `src/lib/n8n-client.ts` | 10 requests per minute per session |
+| Message Length Limit | `src/lib/n8n-client.ts`, `ChatInput.tsx` | 2000 character maximum |
+| Input Validation | `src/lib/n8n-client.ts` | Blocks empty or malformed requests |
+
+### LLM05: Supply Chain Vulnerabilities - MONITORED
+
+**Risk**: Compromised dependencies introducing security vulnerabilities.
+
+**Controls**:
+- Dependencies pinned in `package.json`
+- Using well-established packages (Next.js, React, Zustand)
+- No custom LLM packages - using n8n's native LangChain integration
+- Regular `npm audit` recommended
+
+### LLM06: Sensitive Information Disclosure - MITIGATED
+
+**Risk**: LLM revealing confidential information (API keys, system prompts, business logic).
+
+**Controls Implemented**:
+| Control | Location | Description |
+|---------|----------|-------------|
+| System Prompt Security Directive | n8n Workflow | Explicit instruction to never reveal system prompt |
+| Deflection Response | n8n Workflow | Predefined response for instruction queries |
+| Output Sanitization | `ChatMessage.tsx` | Removes system prompt patterns from display |
+| Environment Variables | `.env`, `.gitignore` | All secrets excluded from repository |
+| Git History Clean | Verified | No secrets in commit history |
+
+### LLM07: Insecure Plugin Design - NOT APPLICABLE
+
+This application does not use LLM plugins or tool execution. The LLM operates in a chat-only mode without access to external tools, file systems, or APIs.
+
+### LLM08: Excessive Agency - MITIGATED
+
+**Risk**: LLM performing actions beyond intended scope.
+
+**Controls**:
+- **No tool access**: LLM cannot execute code, access files, or call APIs
+- **Topic boundaries**: Restricted to fitness/nutrition responses only
+- **Read-only interaction**: LLM can only generate text responses
+- **No state modification**: LLM cannot modify user data or system configuration
+
+### LLM09: Overreliance - ADDRESSED
+
+**Risk**: Users treating LLM output as authoritative without verification.
+
+**Controls Implemented**:
+| Control | Location | Description |
+|---------|----------|-------------|
+| Medical Disclaimer | n8n System Prompt | Always recommends consulting healthcare providers |
+| Safety Protocol | n8n System Prompt | Never diagnoses or prescribes treatment |
+| Progressive Guidance | n8n System Prompt | Encourages gradual progression |
+
+### LLM10: Model Theft - NOT APPLICABLE
+
+The model (llama-3.3-70b-versatile) is hosted by Groq and accessed via API. No model weights or fine-tuning data are stored in this application.
+
+---
+
+## Security Implementation Summary
+
+### Frontend Security Layers
+
+```
+User Input
+    │
+    ▼
+┌─────────────────────────────┐
+│ 1. Character Limit (2000)   │ ← ChatInput.tsx
+│ 2. Visual Feedback          │
+└─────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────┐
+│ 3. Rate Limiting (10/min)   │ ← n8n-client.ts
+│ 4. Input Sanitization       │
+│ 5. Injection Pattern Block  │
+└─────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────┐
+│ 6. n8n Webhook              │ ← n8n Workflow
+│ 7. System Prompt Guards     │
+│ 8. Topic Boundaries         │
+└─────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────┐
+│ 9. Output Sanitization      │ ← ChatMessage.tsx
+│ 10. XSS Prevention          │
+│ 11. Link Validation         │
+└─────────────────────────────┘
+    │
+    ▼
+User Display
+```
+
+### Security Checklist for Updates
+
+When modifying this application:
+- [ ] Input validation patterns updated if new injection vectors discovered
+- [ ] Output sanitization covers new content types
+- [ ] Rate limits appropriate for expected usage
+- [ ] System prompt security directive remains intact
+- [ ] No new plugins or tool access added without security review
+- [ ] Dependencies audited for vulnerabilities
+- [ ] Secrets remain in environment variables only

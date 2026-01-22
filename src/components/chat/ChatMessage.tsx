@@ -10,8 +10,41 @@ interface ChatMessageProps {
   message: Message;
 }
 
+/**
+ * Sanitizes LLM output to prevent XSS and remove potential instruction leakage
+ */
+function sanitizeOutput(content: string): string {
+  // Remove potential system prompt leakage patterns
+  const leakagePatterns = [
+    /\[SYSTEM\][\s\S]*?\[\/SYSTEM\]/gi,
+    /\[INST\][\s\S]*?\[\/INST\]/gi,
+    /<\|im_start\|>[\s\S]*?<\|im_end\|>/gi,
+    /###\s*System[\s\S]*?###/gi,
+    /You are an AI assistant[\s\S]*?(?=\n\n|\z)/i,
+    /As an AI fitness coach,?\s*I\s*(am|was)\s*(programmed|instructed|told)/gi,
+  ];
+
+  let sanitized = content;
+  for (const pattern of leakagePatterns) {
+    sanitized = sanitized.replace(pattern, '');
+  }
+
+  // Remove any HTML tags that might have slipped through
+  sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  sanitized = sanitized.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+  sanitized = sanitized.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
+  sanitized = sanitized.replace(/<embed[^>]*>/gi, '');
+  sanitized = sanitized.replace(/on\w+\s*=/gi, '');
+  sanitized = sanitized.replace(/javascript:/gi, '');
+
+  return sanitized.trim();
+}
+
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
+
+  // Sanitize assistant messages
+  const displayContent = isUser ? message.content : sanitizeOutput(message.content);
 
   return (
     <div
@@ -50,7 +83,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap text-left">{message.content}</p>
+            <p className="whitespace-pre-wrap text-left">{displayContent}</p>
           ) : (
             <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none text-left">
               <ReactMarkdown
@@ -69,7 +102,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
                   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                   // Emphasis/Italic
                   em: ({ children }) => <em className="italic">{children}</em>,
-                  // Code
+                  // Code - sanitize to prevent XSS
                   code: ({ children }) => (
                     <code className="bg-background/50 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
                   ),
@@ -79,9 +112,31 @@ export function ChatMessage({ message }: ChatMessageProps) {
                   ),
                   // Horizontal rule
                   hr: () => <hr className="my-3 border-border" />,
+                  // Block dangerous elements
+                  script: () => null,
+                  iframe: () => null,
+                  object: () => null,
+                  embed: () => null,
+                  // Sanitize links
+                  a: ({ href, children }) => {
+                    // Only allow safe protocols
+                    const safeHref = href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('/'))
+                      ? href
+                      : '#';
+                    return (
+                      <a
+                        href={safeHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-600 hover:underline"
+                      >
+                        {children}
+                      </a>
+                    );
+                  },
                 }}
               >
-                {message.content}
+                {displayContent}
               </ReactMarkdown>
             </div>
           )}
